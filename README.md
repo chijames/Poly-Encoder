@@ -70,6 +70,8 @@
 
 - Default parameters in run.py are used, please refer to run.py for details.
 
+- The results are calculated on sampled portion (1000 instances) of dev set.
+
 Ubuntu:
 |       Model       |   **R@1**  |   **R@2**  |  **R@5**   |  **R@10**  |  **MRR**   |
 | :---------------: | :--------: | :--------: | :--------: | :--------: | :--------: |
