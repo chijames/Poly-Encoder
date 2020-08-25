@@ -8,8 +8,6 @@
 
 - This repository does not implement all details as in the original paper, for example, learning rate decay by 0.4 when plateau. Also due to limited computing resources, I cannot use the exact parameter settings such as batch size or context length as in the original paper. In addition, a much smaller bert model is used. Feel free to tune them or use larger models if you have more computing resources.
 
-- For the dstc 7 dataset, the original ParlAI implementation uses [data augmentation](https://github.com/facebookresearch/ParlAI/issues/2306#issuecomment-571284065) technique, which is not used in this repository. You can modify the data preprocessing code in dstc7 for that purpose.
-
 ## Requirements
 
 - Please see requirements.txt.
@@ -33,6 +31,16 @@
 1. Download the data from the official competition [site](https://ibm.github.io/dstc-noesis/public/datasets.html), specifically, download train (ubuntu_train_subtask_1.json), valid (ubuntu_dev_subtask_1.json), test (ubuntu_responses_subtask_1.tsv, ubuntu_test_subtask_1.json) split of subtask 1 and put them in the dstc7/ folder.
 
 2. cd dstc7/ then bash parse.sh
+
+## DSTC 7 Augmented Data (from ParlAI)
+
+1. Download the data from ParlAI [website](http://parl.ai/downloads/dstc7/dstc7_v2.tgz) and keep only ubuntu_train_subtask_1_augmented.json.
+
+2. Move ubuntu_train_subtask_1_augmented.json into dstc7_aug/ then python3 parse.py.
+
+3. Copy the dev.txt and test.txt file from dstc7/ into dstc7_aug/ since only training file is augmented
+
+4. You can refer to the original [post](https://github.com/facebookresearch/ParlAI/issues/2306#issuecomment-571284065) discussing the construction of this augmented data.
 
 ## Run Experiments (on dstc7)
 
@@ -72,6 +80,8 @@
 
 - The results are calculated on sampled portion (1000 instances) of dev set.
 
+- da = data augmentation, we only report one result with poly vectors=64 and bert-large with data augmentation (dstc7_aug). This result is really close to numbers reported in the original paper.
+
 Ubuntu:
 |       Model       |   **R@1**  |   **R@2**  |  **R@5**   |  **R@10**  |  **MRR**   |
 | :---------------: | :--------: | :--------: | :--------: | :--------: | :--------: |
@@ -87,4 +97,4 @@ DSTC 7:
 | Poly-Encoder  16  |   0.447    |   0.534    |   0.668    |   0.760    |   0.550    |
 | Poly-Encoder  64  |   0.438    |   0.540    |   0.668    |   0.755    |   0.546    |
 | Poly-Encoder  360 |   0.453    |   0.553    |   0.665    |   0.751    |   0.545    |
-
+| da + bert large   |   0.561    |   0.659    |   0.765    |   0.858    |   0.659    |
