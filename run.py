@@ -13,7 +13,7 @@ from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from transformers import BertModel, BertConfig, BertTokenizerFast
+from transformers import BertModel, BertConfig, BertTokenizer, BertTokenizerFast
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 
 from dataset import SelectionDataset
@@ -158,13 +158,13 @@ if __name__ == '__main__':
                                                                       context_transform, response_transform, sample_cnt=None)
         val_dataset = SelectionDataset(os.path.join(args.train_dir, 'dev.txt'),
                                                                   context_transform, response_transform, sample_cnt=1000)
-        train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size, collate_fn=train_dataset.batchify_join_str, shuffle=True)
+        train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size, collate_fn=train_dataset.batchify_join_str, shuffle=True, num_workers=1)
         t_total = len(train_dataloader) // args.gradient_accumulation_steps * args.num_train_epochs
     else: # test
         val_dataset = SelectionDataset(os.path.join(args.train_dir, 'test.txt'),
                                                                   context_transform, response_transform, sample_cnt=None)
 
-    val_dataloader = DataLoader(val_dataset, batch_size=args.eval_batch_size, collate_fn=val_dataset.batchify_join_str, shuffle=False)
+    val_dataloader = DataLoader(val_dataset, batch_size=args.eval_batch_size, collate_fn=val_dataset.batchify_join_str, shuffle=False, num_workers=1)
 
 
     epoch_start = 1
@@ -177,6 +177,7 @@ if __name__ == '__main__':
     shutil.copyfile(os.path.join(args.bert_model, 'vocab.txt'), os.path.join(args.output_dir, 'vocab.txt'))
     shutil.copyfile(os.path.join(args.bert_model, 'config.json'), os.path.join(args.output_dir, 'config.json'))
     log_wf = open(os.path.join(args.output_dir, 'log.txt'), 'a', encoding='utf-8')
+    print (args, file=log_wf)
 
     state_save_path = os.path.join(args.output_dir, '{}_{}_pytorch_model.bin'.format(args.architecture, args.poly_m))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
