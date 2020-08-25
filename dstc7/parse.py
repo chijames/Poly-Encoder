@@ -13,8 +13,6 @@ outfile = open('{}.txt'.format(args.mode), 'w')
 for content in data:
     messages = content['messages-so-far']
     options = content['options-for-correct-answers']
-    if len(options) == 0: # we skip no answers
-        continue
     option = options[0]
     correct_id = option['candidate-id']
     context = []
