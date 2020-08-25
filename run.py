@@ -13,7 +13,7 @@ from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from transformers import BertModel, BertConfig, BertTokenizer
+from transformers import BertModel, BertConfig, BertTokenizerFast
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 
 from dataset import SelectionDataset
@@ -108,7 +108,6 @@ if __name__ == '__main__':
     parser.add_argument("--print_freq", default=100, type=int, help="Log frequency")
 
     parser.add_argument("--poly_m", default=0, type=int, help="Number of m of polyencoder")
-    parser.add_argument("--max_history", default=6, type=int, help="Number of contexts")
 
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--weight_decay", default=0.01, type=float)
@@ -140,13 +139,13 @@ if __name__ == '__main__':
     set_seed(args)
 
     MODEL_CLASSES = {
-        'bert': (BertConfig, BertTokenizer, BertModel),
+        'bert': (BertConfig, BertTokenizerFast, BertModel),
     }
     ConfigClass, TokenizerClass, BertModelClass = MODEL_CLASSES[args.model_type]
 
     ## init dataset and bert model
-    tokenizer = TokenizerClass.from_pretrained(os.path.join(args.bert_model, "vocab.txt"), do_lower_case=True)
-    context_transform = SelectionJoinTransform(tokenizer=tokenizer, max_len=args.max_contexts_length, max_history=args.max_history)
+    tokenizer = TokenizerClass.from_pretrained(os.path.join(args.bert_model, "vocab.txt"), do_lower_case=True, clean_text=False)
+    context_transform = SelectionJoinTransform(tokenizer=tokenizer, max_len=args.max_contexts_length)
     response_transform = SelectionSequentialTransform(tokenizer=tokenizer, max_len=args.max_response_length)
 
     print('=' * 80)

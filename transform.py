@@ -16,14 +16,13 @@ class SelectionSequentialTransform(object):
         return input_ids_list, input_masks_list
 
     def __str__(self) -> str:
-        return 'maxlen%d_maxhistory%d_pairlast%s' % (self.max_len, self.max_history, str(self.pair_last))
+        return 'maxlen{}'.format(self.max_len)
 
 
 class SelectionJoinTransform(object):
-    def __init__(self, tokenizer, max_len, max_history):
+    def __init__(self, tokenizer, max_len):
         self.tokenizer = tokenizer
         self.max_len = max_len
-        self.max_history = max_history
 
         self.cls_id = self.tokenizer.convert_tokens_to_ids('[CLS]')
         self.sep_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
@@ -33,7 +32,7 @@ class SelectionJoinTransform(object):
     def __call__(self, texts):
         # another option is to use [SEP], but here we follow the discussion at:
         # https://github.com/facebookresearch/ParlAI/issues/2306#issuecomment-599180186
-        context = '\n'.join(texts[-self.max_history:])
+        context = '\n'.join(texts)
         tokenized_dict = self.tokenizer.encode_plus(context)
         input_ids, input_masks = tokenized_dict['input_ids'], tokenized_dict['attention_mask']
         input_ids = input_ids[-self.max_len:]
@@ -47,5 +46,5 @@ class SelectionJoinTransform(object):
         return input_ids, input_masks
 
     def __str__(self) -> str:
-        return '[join_str]maxlen%d_maxhis%d' % (self.max_len, self.max_history)
+        return '[join_str]maxlen{}'.format(self.max_len)
     
