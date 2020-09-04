@@ -1,4 +1,4 @@
-# Bi-Encoder and Poly-Encoder for Response Selection Tasks
+# Bi-Encoder, Poly-Encoder and Cross-Encoder for Response Selection Tasks
 
 - This repository is an unofficial re-implementation of [Poly-encoders: Transformer Architectures and Pre-training Strategies for Fast and Accurate Multi-sentence Scoring](https://arxiv.org/abs/1905.01969v2).
 
@@ -56,7 +56,13 @@
    python3 run.py --bert_model bert_model/ --output_dir output_dstc7/ --train_dir dstc7/ --use_pretrain --architecture poly --poly_m 16
    ```
 
-3. Simply change the name of directories to ubuntu and run experiments on the ubuntu dataset.
+3. Train a **Cross-Encoder**:
+
+   ```shell
+   python3 run.py --bert_model bert_model/ --output_dir output_dstc7/ --train_dir dstc7/ --use_pretrain --architecture cross
+   ```
+
+4. Simply change the name of directories to ubuntu and run experiments on the ubuntu dataset.
 
 ## Inference
 
@@ -72,6 +78,12 @@
    python3 run.py --bert_model bert_model/ --output_dir output_dstc7/ --train_dir dstc7/ --use_pretrain --architecture poly --poly_m 16 --eval
    ```
 
+3. Test on **Cross_Encoder**:
+
+   ```shell
+   python3 run.py --bert_model bert_model/ --output_dir output_dstc7/ --train_dir dstc7/ --use_pretrain --architecture cross --eval
+   ```
+
 ## Results
 
 - All the experiments are done on a single GTX 1080 GPU with 8G memory and i7-6700K CPU @ 4.00GHz.
@@ -80,7 +92,7 @@
 
 - The results are calculated on sampled portion (1000 instances) of dev set.
 
-- da = data augmentation, we only report one result with poly vectors=64 and bert-large with data augmentation (dstc7_aug). This result is really close to numbers reported in the original paper.
+- da = data augmentation, we only report one result with poly vectors=64 and bert-base (uncased_L-12_H-768_A-12) with data augmentation (dstc7_aug). This result is really close to numbers reported in the original paper.
 
 Ubuntu:
 |       Model       |   **R@1**  |   **R@2**  |  **R@5**   |  **R@10**  |  **MRR**   |
@@ -97,4 +109,5 @@ DSTC 7:
 | Poly-Encoder  16  |   0.447    |   0.534    |   0.668    |   0.760    |   0.550    |
 | Poly-Encoder  64  |   0.438    |   0.540    |   0.668    |   0.755    |   0.546    |
 | Poly-Encoder  360 |   0.453    |   0.553    |   0.665    |   0.751    |   0.545    |
-| da + bert large   |   0.561    |   0.659    |   0.765    |   0.858    |   0.659    |
+| Cross-Encoder     |            |            |            |            |            |
+| da + bert base    |   0.561    |   0.659    |   0.765    |   0.858    |   0.659    |
