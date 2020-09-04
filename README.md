@@ -1,8 +1,8 @@
-# Bi-Encoder, Poly-Encoder and Cross-Encoder for Response Selection Tasks
+# Bi-Encoder, Poly-Encoder, and Cross-Encoder for Response Selection Tasks
 
 - This repository is an unofficial re-implementation of [Poly-encoders: Transformer Architectures and Pre-training Strategies for Fast and Accurate Multi-sentence Scoring](https://arxiv.org/abs/1905.01969v2).
 
-- Special thanks to sfzhou5678! Some of the data preprocessing (dataset.py) and training loop code is adapted from his [github repo](https://github.com/sfzhou5678/PolyEncoder). However, the model architecture and data representation in that repository do not follow the paper exactly, thus leading to worse performance. I re-implement the model for Bi-Encoder and Poly-Encoder in encoder.py.
+- Special thanks to sfzhou5678! Some of the data preprocessing (dataset.py) and training loop code is adapted from his [github repo](https://github.com/sfzhou5678/PolyEncoder). However, the model architecture and data representation in that repository do not follow the paper exactly, thus leading to worse performance. I re-implement the model for Bi-Encoder and Poly-Encoder in encoder.py. In addition, the model and data processing pipeline of cross encoder are also implemented.
 
 - Most of the training code in run.py is adpated from [examples](https://github.com/huggingface/transformers/blob/5bfcd0485ece086ebcbed2d008813037968a9e58/examples/run_glue.py?fbclid=IwAR3BlKIJYak659a6X12gsYOMs1JJPtnsdFUmn93CovwTJ5VXQZX1TK78yGo#L102) in the [huggingface](https://github.com/huggingface/transformers) repository.
 
@@ -38,7 +38,7 @@
 
 2. Move ubuntu_train_subtask_1_augmented.json into dstc7_aug/ then python3 parse.py.
 
-3. Copy the dev.txt and test.txt file from dstc7/ into dstc7_aug/ since only training file is augmented
+3. Copy the dev.txt and test.txt file from dstc7/ into dstc7_aug/ since only training file is augmented.
 
 4. You can refer to the original [post](https://github.com/facebookresearch/ParlAI/issues/2306#issuecomment-571284065) discussing the construction of this augmented data.
 
