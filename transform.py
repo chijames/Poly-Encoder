@@ -15,9 +15,6 @@ class SelectionSequentialTransform(object):
 
         return input_ids_list, input_masks_list
 
-    def __str__(self) -> str:
-        return 'maxlen{}'.format(self.max_len)
-
 
 class SelectionJoinTransform(object):
     def __init__(self, tokenizer, max_len):
@@ -44,7 +41,45 @@ class SelectionJoinTransform(object):
         assert len(input_masks) == self.max_len
 
         return input_ids, input_masks
-
-    def __str__(self) -> str:
-        return '[join_str]maxlen{}'.format(self.max_len)
     
+
+class SelectionConcatTransform(object):
+    def __init__(self, tokenizer, max_len):
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+        self.cls_id = self.tokenizer.convert_tokens_to_ids('[CLS]')
+        self.sep_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
+        self.tokenizer.add_tokens(['\n'], special_tokens=True)
+        self.pad_id = 0
+
+    def __call__(self, context, responses):
+        # another option is to use [SEP], but here we follow the discussion at:
+        # https://github.com/facebookresearch/ParlAI/issues/2306#issuecomment-599180186
+        context = '\n'.join(context)
+        tokenized_dict = self.tokenizer.encode_plus(context)
+        context_ids, context_masks, context_segment_ids = tokenized_dict['input_ids'], tokenized_dict['attention_mask'], tokenized_dict['token_type_ids']
+        ret_input_ids = []
+        ret_input_masks = []
+        ret_segment_ids = []
+        for response in responses:
+            tokenized_dict = self.tokenizer.encode_plus(response)
+            response_ids, response_masks, response_segment_ids = tokenized_dict['input_ids'], tokenized_dict['attention_mask'], tokenized_dict['token_type_ids']
+            response_segment_ids = [1]*(len(response_segment_ids)-1)
+            input_ids = context_ids + response_ids[1:]
+            input_ids = input_ids[-self.max_len:]
+            input_masks = context_masks + response_masks[1:]
+            input_masks = input_masks[-self.max_len:]
+            input_segment_ids = context_segment_ids + response_segment_ids
+            input_segment_ids = input_segment_ids[-self.max_len:]
+            input_ids[0] = self.cls_id
+            input_ids += [self.pad_id] * (self.max_len - len(input_ids))
+            input_masks += [0] * (self.max_len - len(input_masks))
+            input_segment_ids += [0] * (self.max_len - len(input_segment_ids))
+            assert len(input_ids) == self.max_len
+            assert len(input_masks) == self.max_len
+            assert len(input_segment_ids) == self.max_len
+            ret_input_ids.append(input_ids)
+            ret_input_masks.append(input_masks)
+            ret_segment_ids.append(input_segment_ids)
+        return ret_input_ids, ret_input_masks, ret_segment_ids

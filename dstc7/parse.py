@@ -26,4 +26,13 @@ for content in data:
         for neg in negs:
             if neg['candidate-id'] != correct_id:
                 outfile.write('{}\t{}\t{}\n'.format(0, '\t'.join(context), neg['utterance'].strip()))
+    if args.mode == 'train':
+        negs = content['options-for-next']
+        cnt = 0
+        for neg in negs:
+            if neg['candidate-id'] != correct_id:
+                cnt += 1
+                outfile.write('{}\t{}\t{}\n'.format(0, '\t'.join(context), neg['utterance'].strip()))
+                if cnt == 15: # 16-1
+                    break
 

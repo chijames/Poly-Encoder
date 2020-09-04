@@ -7,10 +7,12 @@ import pickle
 
 
 class SelectionDataset(Dataset):
-    def __init__(self, file_path, context_transform, response_transform, sample_cnt=None):
+    def __init__(self, file_path, context_transform, response_transform, concat_transform, sample_cnt=None, mode='poly'):
         self.context_transform = context_transform
         self.response_transform = response_transform
+        self.concat_transform = concat_transform
         self.data_source = []
+        self.mode = mode
         neg_responses = []
         with open(file_path, encoding='utf-8') as f:
             group = {
@@ -44,34 +46,59 @@ class SelectionDataset(Dataset):
     def __getitem__(self, index):
         group = self.data_source[index]
         context, responses, labels = group['context'], group['responses'], group['labels']
-        transformed_context = self.context_transform(context)  # [token_ids],[seg_ids],[masks]
-        transformed_responses = self.response_transform(responses)  # [token_ids],[seg_ids],[masks]
-        key_data = transformed_context, transformed_responses, labels
+        if self.mode == 'cross':
+            transformed_text = self.concat_transform(context, responses)
+            ret = transformed_text, labels
+        else:
+            transformed_context = self.context_transform(context)  # [token_ids],[seg_ids],[masks]
+            transformed_responses = self.response_transform(responses)  # [token_ids],[seg_ids],[masks]
+            ret = transformed_context, transformed_responses, labels
 
-        return key_data
+        return ret
 
     def batchify_join_str(self, batch):
-        contexts_token_ids_list_batch, contexts_input_masks_list_batch, \
-        responses_token_ids_list_batch, responses_input_masks_list_batch = [], [], [], []
-        labels_batch = []
-        for sample in batch:
-            (contexts_token_ids_list, contexts_input_masks_list), (responses_token_ids_list, responses_input_masks_list) = sample[:2]
+        if self.mode == 'cross':
+            text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch = [], [], []
+            labels_batch = []
+            for sample in batch:
+                text_token_ids_list, text_input_masks_list, text_segment_ids_list = sample[0]
 
-            contexts_token_ids_list_batch.append(contexts_token_ids_list)
-            contexts_input_masks_list_batch.append(contexts_input_masks_list)
+                text_token_ids_list_batch.append(text_token_ids_list)
+                text_input_masks_list_batch.append(text_input_masks_list)
+                text_segment_ids_list_batch.append(text_segment_ids_list)
 
-            responses_token_ids_list_batch.append(responses_token_ids_list)
-            responses_input_masks_list_batch.append(responses_input_masks_list)
+                labels_batch.append(sample[1])
 
-            labels_batch.append(sample[-1])
+            long_tensors = [text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch]
 
-        long_tensors = [contexts_token_ids_list_batch, contexts_input_masks_list_batch,
-                                        responses_token_ids_list_batch, responses_input_masks_list_batch]
+            text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch = (
+                torch.tensor(t, dtype=torch.long) for t in long_tensors)
 
-        contexts_token_ids_list_batch, contexts_input_masks_list_batch, \
-        responses_token_ids_list_batch, responses_input_masks_list_batch = (
-            torch.tensor(t, dtype=torch.long) for t in long_tensors)
+            labels_batch = torch.tensor(labels_batch, dtype=torch.long)
+            return text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch, labels_batch
 
-        labels_batch = torch.tensor(labels_batch, dtype=torch.long)
-        return contexts_token_ids_list_batch, contexts_input_masks_list_batch, \
-                      responses_token_ids_list_batch, responses_input_masks_list_batch, labels_batch
+        else:
+            contexts_token_ids_list_batch, contexts_input_masks_list_batch, \
+            responses_token_ids_list_batch, responses_input_masks_list_batch = [], [], [], []
+            labels_batch = []
+            for sample in batch:
+                (contexts_token_ids_list, contexts_input_masks_list), (responses_token_ids_list, responses_input_masks_list) = sample[:2]
+
+                contexts_token_ids_list_batch.append(contexts_token_ids_list)
+                contexts_input_masks_list_batch.append(contexts_input_masks_list)
+
+                responses_token_ids_list_batch.append(responses_token_ids_list)
+                responses_input_masks_list_batch.append(responses_input_masks_list)
+
+                labels_batch.append(sample[-1])
+
+            long_tensors = [contexts_token_ids_list_batch, contexts_input_masks_list_batch,
+                                            responses_token_ids_list_batch, responses_input_masks_list_batch]
+
+            contexts_token_ids_list_batch, contexts_input_masks_list_batch, \
+            responses_token_ids_list_batch, responses_input_masks_list_batch = (
+                torch.tensor(t, dtype=torch.long) for t in long_tensors)
+
+            labels_batch = torch.tensor(labels_batch, dtype=torch.long)
+            return contexts_token_ids_list_batch, contexts_input_masks_list_batch, \
+                          responses_token_ids_list_batch, responses_input_masks_list_batch, labels_batch

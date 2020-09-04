@@ -17,8 +17,8 @@ from transformers import BertModel, BertConfig, BertTokenizer, BertTokenizerFast
 from transformers.optimization import AdamW, get_linear_schedule_with_warmup
 
 from dataset import SelectionDataset
-from transform import SelectionSequentialTransform, SelectionJoinTransform
-from encoder import PolyEncoder, BiEncoder
+from transform import SelectionSequentialTransform, SelectionJoinTransform, SelectionConcatTransform
+from encoder import PolyEncoder, BiEncoder, CrossEncoder
 
 from sklearn.metrics import label_ranking_average_precision_score
 
@@ -31,7 +31,6 @@ def set_seed(args):
     torch.manual_seed(args.seed)
 
 def eval_running_model(dataloader, test=False):
-    loss_fct = CrossEntropyLoss()
     model.eval()
     eval_loss, eval_hit_times = 0, 0
     nb_eval_steps, nb_eval_examples = 0, 0
@@ -39,13 +38,18 @@ def eval_running_model(dataloader, test=False):
     mrr = []
     for step, batch in enumerate(dataloader):
         batch = tuple(t.to(device) for t in batch)
-        context_token_ids_list_batch, context_input_masks_list_batch, \
-        response_token_ids_list_batch, response_input_masks_list_batch, labels_batch = batch
-        
-        with torch.no_grad():
-            logits = model(context_token_ids_list_batch, context_input_masks_list_batch,
-                                          response_token_ids_list_batch, response_input_masks_list_batch)
-            loss = loss_fct(logits, torch.argmax(labels_batch, 1))
+        if args.architecture == 'cross':
+            text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch, labels_batch = batch
+            with torch.no_grad():
+                logits = model(text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch)
+                loss = F.cross_entropy(logits, torch.argmax(labels_batch, 1))
+        else:
+            context_token_ids_list_batch, context_input_masks_list_batch, \
+            response_token_ids_list_batch, response_input_masks_list_batch, labels_batch = batch
+            with torch.no_grad():
+                logits = model(context_token_ids_list_batch, context_input_masks_list_batch,
+                                              response_token_ids_list_batch, response_input_masks_list_batch)
+                loss = F.cross_entropy(logits, torch.argmax(labels_batch, 1))
         r2_indices = torch.topk(logits, 2)[1] # R 2 @ 100
         r5_indices = torch.topk(logits, 5)[1] # R 5 @ 100
         r10_indices = torch.topk(logits, 10)[1] # R 10 @ 100
@@ -99,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument("--train_dir", default='data/ubuntu_data', type=str)
 
     parser.add_argument("--use_pretrain", action="store_true")
-    parser.add_argument("--architecture", required=True, type=str, help='[poly, bi]')
+    parser.add_argument("--architecture", required=True, type=str, help='[poly, bi, cross]')
 
     parser.add_argument("--max_contexts_length", default=128, type=int)
     parser.add_argument("--max_response_length", default=32, type=int)
@@ -147,6 +151,7 @@ if __name__ == '__main__':
     tokenizer = TokenizerClass.from_pretrained(os.path.join(args.bert_model, "vocab.txt"), do_lower_case=True, clean_text=False)
     context_transform = SelectionJoinTransform(tokenizer=tokenizer, max_len=args.max_contexts_length)
     response_transform = SelectionSequentialTransform(tokenizer=tokenizer, max_len=args.max_response_length)
+    concat_transform = SelectionConcatTransform(tokenizer=tokenizer, max_len=args.max_response_length+args.max_contexts_length)
 
     print('=' * 80)
     print('Train dir:', args.train_dir)
@@ -155,16 +160,16 @@ if __name__ == '__main__':
 
     if not args.eval:
         train_dataset = SelectionDataset(os.path.join(args.train_dir, 'train.txt'),
-                                                                      context_transform, response_transform, sample_cnt=None)
+                                                                      context_transform, response_transform, concat_transform, sample_cnt=None, mode=args.architecture)
         val_dataset = SelectionDataset(os.path.join(args.train_dir, 'dev.txt'),
-                                                                  context_transform, response_transform, sample_cnt=1000)
-        train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size, collate_fn=train_dataset.batchify_join_str, shuffle=True, num_workers=1)
+                                                                  context_transform, response_transform, concat_transform, sample_cnt=1000, mode=args.architecture)
+        train_dataloader = DataLoader(train_dataset, batch_size=args.train_batch_size, collate_fn=train_dataset.batchify_join_str, shuffle=True, num_workers=0)
         t_total = len(train_dataloader) // args.gradient_accumulation_steps * args.num_train_epochs
     else: # test
         val_dataset = SelectionDataset(os.path.join(args.train_dir, 'test.txt'),
-                                                                  context_transform, response_transform, sample_cnt=None)
+                                                                  context_transform, response_transform, concat_transform, sample_cnt=None, mode=args.architecture)
 
-    val_dataloader = DataLoader(val_dataset, batch_size=args.eval_batch_size, collate_fn=val_dataset.batchify_join_str, shuffle=False, num_workers=1)
+    val_dataloader = DataLoader(val_dataset, batch_size=args.eval_batch_size, collate_fn=val_dataset.batchify_join_str, shuffle=False, num_workers=0)
 
 
     epoch_start = 1
@@ -200,6 +205,8 @@ if __name__ == '__main__':
         model = PolyEncoder(bert_config, bert=bert, poly_m=args.poly_m)
     elif args.architecture == 'bi':
         model = BiEncoder(bert_config, bert=bert)
+    elif args.architecture == 'cross':
+        model = CrossEncoder(bert_config, bert=bert)
     else:
         raise Exception('Unknown architecture.')
     model.resize_token_embeddings(len(tokenizer)) 
@@ -245,11 +252,16 @@ if __name__ == '__main__':
                 model.train()
                 optimizer.zero_grad()
                 batch = tuple(t.to(device) for t in batch)
-                context_token_ids_list_batch, context_input_masks_list_batch, \
-                response_token_ids_list_batch, response_input_masks_list_batch, labels_batch = batch
-                loss = model(context_token_ids_list_batch, context_input_masks_list_batch,
+                if args.architecture == 'cross':
+                    text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch, labels_batch = batch
+                    loss = model(text_token_ids_list_batch, text_input_masks_list_batch, text_segment_ids_list_batch, labels_batch)
+                else:
+                    context_token_ids_list_batch, context_input_masks_list_batch, \
+                    response_token_ids_list_batch, response_input_masks_list_batch, labels_batch = batch
+                    loss = model(context_token_ids_list_batch, context_input_masks_list_batch,
                                           response_token_ids_list_batch, response_input_masks_list_batch,
                                           labels_batch)
+
                 loss = loss / args.gradient_accumulation_steps
                 
                 if args.fp16:
