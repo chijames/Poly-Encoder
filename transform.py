@@ -46,8 +46,10 @@ class SelectionJoinTransform(object):
 class SelectionConcatTransform(object):
     def __init__(self, tokenizer, max_len):
         self.tokenizer = tokenizer
+        # in cross encoder mode, we simply add max_contexts_length and max_response_length together to form max_len
+        # this (in almost all cases) ensures all the response tokens are used and as many context tokens are used as possible
+        # the intuition is that responses and the last few contexts are the most important
         self.max_len = max_len
-
         self.cls_id = self.tokenizer.convert_tokens_to_ids('[CLS]')
         self.sep_id = self.tokenizer.convert_tokens_to_ids('[SEP]')
         self.tokenizer.add_tokens(['\n'], special_tokens=True)
