@@ -1,6 +1,6 @@
 # Bi-Encoder, Poly-Encoder, and Cross-Encoder for Response Selection Tasks
 
-- This repository is an unofficial re-implementation of [Poly-encoders: Transformer Architectures and Pre-training Strategies for Fast and Accurate Multi-sentence Scoring](https://arxiv.org/abs/1905.01969v2).
+- This repository is an unofficial re-implementation of [Poly-encoders: Transformer Architectures and Pre-training Strategies for Fast and Accurate Multi-sentence Scoring](https://arxiv.org/abs/1905.01969v4).
 
 - Special thanks to sfzhou5678! Some of the data preprocessing (dataset.py) and training loop code is adapted from his [github repo](https://github.com/sfzhou5678/PolyEncoder). However, the model architecture and data representation in that repository do not follow the paper exactly, thus leading to worse performance. I re-implement the model for Bi-Encoder and Poly-Encoder in encoder.py. In addition, the model and data processing pipeline of cross encoder are also implemented.
 
