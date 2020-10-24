@@ -6,6 +6,8 @@
 
 - Most of the training code in run.py is adpated from [examples](https://github.com/huggingface/transformers/blob/5bfcd0485ece086ebcbed2d008813037968a9e58/examples/run_glue.py?fbclid=IwAR3BlKIJYak659a6X12gsYOMs1JJPtnsdFUmn93CovwTJ5VXQZX1TK78yGo#L102) in the [huggingface](https://github.com/huggingface/transformers) repository.
 
+- The most important architectural difference between this implementation and the original paper is that only one bert encoder is used (instead of two separate ones). Please refer to this [issue](https://github.com/chijames/Poly-Encoder/issues/4#issue-728612873) for details. However, this should not affect the performance much.
+
 - This repository does not implement all details as in the original paper, for example, learning rate decay by 0.4 when plateau. Also due to limited computing resources, I cannot use the exact parameter settings such as batch size or context length as in the original paper. In addition, a much smaller bert model is used. Feel free to tune them or use larger models if you have more computing resources.
 
 ## Requirements
