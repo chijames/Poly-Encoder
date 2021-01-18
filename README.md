@@ -36,6 +36,8 @@
 
 ## DSTC 7 Augmented Data (from ParlAI)
 
+0. This dataset setting does not work for cross encoder. For details, please refer to this [issue](https://github.com/chijames/Poly-Encoder/issues/7).
+
 1. Download the data from ParlAI [website](http://parl.ai/downloads/dstc7/dstc7_v2.tgz) and keep only ubuntu_train_subtask_1_augmented.json.
 
 2. Move ubuntu_train_subtask_1_augmented.json into dstc7_aug/ then python3 parse.py.
