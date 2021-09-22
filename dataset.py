@@ -21,7 +21,7 @@ class SelectionDataset(Dataset):
                 'labels': []
             }
             for line in f:
-                split = line.strip().split('\t')
+                split = line.strip('\n').split('\t')
                 lbl, context, response = int(split[0]), split[1:-1], split[-1]
                 if lbl == 1 and len(group['responses']) > 0:
                     self.data_source.append(group)
