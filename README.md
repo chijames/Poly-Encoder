@@ -115,3 +115,10 @@ DSTC 7:
 | Poly-Encoder  360 |   0.453    |   0.553    |   0.665    |   0.751    |   0.545    |
 | Cross-Encoder     |   0.502    |   0.595    |   0.712    |   0.790    |   0.599    |
 | da + bert base    |   0.561    |   0.659    |   0.765    |   0.858    |   0.659    |
+
+
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=chijames/Poly-Encoder&type=Date)](https://star-history.com/#chijames/Poly-Encoder&Date)
+
